@@ -28,14 +28,14 @@ namespace FirstApii.Dtos.CategoryDtos
                .Equal(true).WithMessage("true olmalidir")
                .NotNull().WithMessage("bosh qoymag olmaz");
 
-            RuleFor(p => p)
-                .Custom((p, context) =>
-                {
-                    if (p.SalePrice < p.CostPrice)
-                    {
-                        context.AddFailure("SalePrice", "SalePrice CostPrice dan kicik ola bilmez");
-                    }
-                });
+            //RuleFor(p => p)
+            //    .Custom((p, context) =>
+            //    {
+            //        if (p.SalePrice < p.CostPrice)
+            //        {
+            //            context.AddFailure("SalePrice", "SalePrice CostPrice dan kicik ola bilmez");
+            //        }
+            //    });
 
         }
     }

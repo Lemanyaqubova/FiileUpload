@@ -1,9 +1,11 @@
 ﻿using FirstApii.Data.DAL;
 using FirstApii.Dtos.CategoryDtos;
 using FirstApii.Dtos.ProductDtos;
+using FirstApii.Extentions;
 using FirstApii.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FirstApii.Controllers
 {
@@ -12,10 +14,12 @@ namespace FirstApii.Controllers
     public class CategoryController : ControllerBase
     {
         private readonly AppDbContext _appDbContext;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public CategoryController(AppDbContext appDbContext)
+        public CategoryController(AppDbContext appDbContext, IWebHostEnvironment webHostEnvironment)
         {
             _appDbContext = appDbContext;
+            this._webHostEnvironment = webHostEnvironment;
         }
         [HttpGet("{id}")]
         public IActionResult GetOne(int id)
@@ -34,7 +38,7 @@ namespace FirstApii.Controllers
             return Ok(category);
         }
         [HttpGet]
-        public IActionResult GetAll(int page, string search)
+        public IActionResult GetAll([FromQuery]int page, string search)
         {
             var query = _appDbContext.Categories
                 .Where(c => !c.IsDeleted);
@@ -69,30 +73,39 @@ namespace FirstApii.Controllers
            
         }
         [HttpPost]
-        public IActionResult AddCategory(CategoryCreateDto categoryCreateDto)
+        public IActionResult AddCategory([FromForm]CategoryCreateDto categoryCreateDto)
         {
+            if (categoryCreateDto.Photo == null) return StatusCode(409);
+            if (!categoryCreateDto.Photo.IsImage()) return BadRequest("photo type deil");
+            if(categoryCreateDto.Photo.CheckImageSize(10)) return BadRequest("size duzgun deil");
+
             Category newCategory = new()
             {
                 Name = categoryCreateDto.Name,
-                Desc= categoryCreateDto.Desc,
-                ImageUrl=""
+                Desc = categoryCreateDto.Desc,
+                ImageUrl = categoryCreateDto.Photo.SaveImage(_webHostEnvironment,"img",categoryCreateDto.Photo.FileName)
             
             };
 
-            _appDbContext.Categories.Add(newCategory);
+            _appDbContext.Categories.Add(newCategory); 
             _appDbContext.SaveChanges();
             return StatusCode(StatusCodes.Status201Created, newCategory);
         }
         [HttpDelete("{id}")]
         public IActionResult DeleteProduct(int id)
         {
-            var product = _appDbContext.Products.FirstOrDefault(p => p.Id == id);
-            if (product == null) return NotFound();
-            _appDbContext.Products.Remove(product);
+            var category = _appDbContext.Categories.FirstOrDefault(c => c.Id == id);
+            if (category == null) return NotFound();
+            _appDbContext.Categories.Remove(category);
             _appDbContext.SaveChanges();
             return StatusCode(StatusCodes.Status204NoContent);
-
         }
-
+        public IActionResult Update(int id,string name)
+        {
+            var category=_appDbContext.Categories.FirstOrDefault(c=>c.Id == id);
+            if (category == null) return BadRequest("yoxdu");
+            bool result = _appDbContext.Categories.Any(c => c.Name == name && c.Id != category.Id);
+            return StatusCode(StatusCodes.Status204NoContent);
+        }
     }
 }
