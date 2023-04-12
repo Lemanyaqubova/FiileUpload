@@ -1,4 +1,6 @@
-﻿namespace FirstApii.Dtos.ProductDtos
+﻿using FluentValidation;
+
+namespace FirstApii.Dtos.ProductDtos
 {
     public class ProductCreateDto
     {
@@ -8,5 +10,36 @@
         public bool IsActive { get; set; }
         public bool IsDelete { get; set; }
 
+    }
+    public class ProductCreateDtoValidator : AbstractValidator<ProductCreateDto>
+    {
+        public ProductCreateDtoValidator()
+        {
+            RuleFor(p => p.Name)
+                .MaximumLength(50).WithMessage("50den boyuk ola bilmez")
+                .NotNull().WithMessage("bosh qoyma");
+
+            RuleFor(p => p.SalePrice)
+                .GreaterThanOrEqualTo(0).WithMessage("0dan boyuk olmalidir")
+                .NotNull().WithMessage("bosh qoymag olmaz");
+
+            RuleFor(p => p.CostPrice)
+               .GreaterThanOrEqualTo(0).WithMessage("0dan boyuk olmalidir")
+               .NotNull().WithMessage("bosh qoymag olmaz");
+
+            RuleFor(p => p.IsActive)
+               .Equal(true).WithMessage("true olmalidir")
+               .NotNull().WithMessage("bosh qoymag olmaz");
+
+            RuleFor(p => p)
+                .Custom((p, context) =>
+                {
+                    if (p.SalePrice<p.CostPrice)
+                    {
+                        context.AddFailure("SalePrice", "SalePrice CostPrice dan kicik ola bilmez");
+                    }
+                });
+               
+        }
     }
 }
